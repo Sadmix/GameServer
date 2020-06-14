@@ -28,6 +28,7 @@ public:
     Parser *parser;
     QString currentAnswer;
     QVector<Player> players;
+    int ready;
 
 public slots:
     void startServer();

@@ -7,6 +7,7 @@ Server::Server(){
     gameDoc = QJsonDocument::fromJson(file->readAll());
     file->close();
     parser = new Parser(gameDoc);
+    ready = 0;
 
 }
 
@@ -47,34 +48,56 @@ void Server::sockReady(){
 
             if(doc.object().value("type") == "initialization"){
 
+                if(doc.object().value("operation") == "start"){
                 Data = parser->getInit().toJson();
                 socket->write(Data);
                 socket->waitForBytesWritten(500);
+                }
+
+                if(doc.object().value("operation").toString() == "finish"){
+                    ready++;
+                }
+
+                if(ready == 3){
+                    Data = "{\"type\":\"game\", \"operation\":\"start\", \"name\":\"" + players[0].getName().toUtf8() + "\"}"; // сделать рандомного игрока
+                    for(auto s : sockets){
+                        s->waitForBytesWritten(1000);
+                        s->write(Data);
+                    }
+                }
+
 
             } else if(doc.object().value("type").toString() == "regName"){
 
                 QByteArray playerName = doc.object().value("name").toString().toUtf8();
                 players.push_back(Player(playerName));
-                Data = "{\"type\":\"updateName\",\"name\":\"" + playerName + "\"}";
-                for(auto socket : sockets){
-                    socket->write(Data);
+                QJsonArray names;
+                for(auto p : players){
+                    QJsonObject name;
+                    name.insert("name", p.getName());
+                    names.append(name);
+                }
+                QJsonObject obj;
+                obj.insert("type", "updateNames");
+                obj.insert("names", names);
+                QJsonDocument doc(obj);
+                Data = doc.toJson();
+                for(auto s : sockets){
+                        s->write(Data);
                 }
 
-                if(sockets.count() == 3){
+            }
+            else if (doc.object().value("type").toString() == "chooseQuestion"){
 
-                    // init start game
-
-                }
-
-            } else if(doc.object().value("type").toString() == "chooseQuestion"){
-
-                // QJsonObject question = parser->getQuestion(doc.object().value("difficulty").toInt());
-                QByteArray questionText;
+                QJsonObject question = parser->getQuestion(doc.object().value("price").toString().toInt(), doc.object().value("headingId").toString().toInt());
+                QByteArray questionText = question.value("text").toString().toUtf8();
                 Data = "{\"type\":\"questionText\", \"value\" : \"" + questionText + "\"}";
-                socket->write(Data);
-                // show question and answer
+                for(auto s : sockets){
+                    s->write(Data);
+                }
+                qDebug() << "Text: " << question.value("text") << "Answer: " << question.value("answer");
 
-            } else if(doc.object().value("type").toString() == "answer") {
+            } else if (doc.object().value("type").toString() == "answer") {
 
                 // correct ot not?
                 // signal to open dialog
