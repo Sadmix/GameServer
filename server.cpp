@@ -85,6 +85,7 @@ void Server::sockReady(){
                 for(auto s : sockets){
                         s->write(Data);
                 }
+                emit addPlayer(players.last().getName(), players.last().getPoints());
 
             }
             else if (doc.object().value("type").toString() == "chooseQuestion"){
@@ -95,10 +96,25 @@ void Server::sockReady(){
                 for(auto s : sockets){
                     s->write(Data);
                 }
-                qDebug() << "Text: " << question.value("text") << "Answer: " << question.value("answer");
+
+                currentQuestion.setText(question.value("text").toString());
+                currentQuestion.setAnswer(question.value("answer").toString());
+                currentQuestion.setPrice(question.value("price").toInt());
+
+                showQuestion(currentPlayer->getName(), currentQuestion.getText(), currentQuestion.getAnswer());
 
             } else if (doc.object().value("type").toString() == "answer") {
 
+                for(auto p : players){
+                    if(p.getSocketDescriptor() == socket->socketDescriptor()){
+                        currentPlayer = &p;
+                        break;
+                    }
+                }
+
+                blockButtons(true);
+
+                emit showDialog(currentQuestion.getAnswer());
                 // correct ot not?
                 // signal to open dialog
 
@@ -116,4 +132,43 @@ void Server::sockDisc(){
             socket->deleteLater();
         }
     }
+}
+
+void Server::correctAnswer(){
+    currentPlayer->setPoints(currentPlayer->getPoints() + currentQuestion.getPrice());
+    updatePoints();
+    blockButtons(false);
+}
+
+void Server::wrongAnswer(){
+    currentPlayer->setPoints(currentPlayer->getPoints() + currentQuestion.getPrice());
+    updatePoints();
+    blockButtons(false);
+}
+
+void Server::nextQuestion(){
+    Data = "{\"type\":\"game\", \"operation\":\"nextQuestion\"}";
+    for(auto s : sockets){
+        s->write(Data);
+    }
+}
+
+void Server::updatePoints(){
+
+    Data = "{\"type\":\"game\", \"operation\":\"updatePoints\", \"player\":\"" + currentPlayer->getName().toUtf8() + "\", \"points\":\"" + QString::number(currentPlayer->getPoints()).toUtf8() +"\"}";
+    for(auto s : sockets){
+        s->write(Data);
+    }
+
+}
+
+void Server::blockButtons(bool block){
+    QString operation;
+    operation = block ? "blockButtons" : "unblockButtons";
+
+    for(auto s : sockets){
+        Data = "{\"type\":\"game\", \"operation\":\"" + operation.toUtf8() + "\"}";
+        s->write(Data);
+    }
+
 }

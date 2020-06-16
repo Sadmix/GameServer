@@ -43,7 +43,9 @@ QJsonObject Parser::getQuestion(int difficulty, int headingId){
     QJsonArray contents = doc.object().value("contents").toArray();
     QJsonArray questions = contents.at(headingId - 1).toObject().value("questions").toArray();
     QJsonObject question = questions.at(difficulty - 1).toObject();
-
+    question.insert("price", doc.object().value("dif"+QString::number(difficulty)).toInt());
+    question.remove("difficulty");
+    question.remove("type");
     return question;
 
 }

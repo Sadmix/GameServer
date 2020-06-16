@@ -1,7 +1,6 @@
-QT -= gui
-QT += network
+QT += core gui network widgets
 
-CONFIG += c++11 console
+CONFIG += c++11
 CONFIG -= app_bundle
 
 # The following define makes your compiler emit warnings if you use
@@ -17,8 +16,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
+        mainwindow.cpp \
         parser.cpp \
         player.cpp \
+        question.cpp \
         server.cpp
 
 # Default rules for deployment.
@@ -27,6 +28,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    mainwindow.h \
     parser.h \
     player.h \
+    question.h \
     server.h
+
+FORMS += \
+    mainwindow.ui

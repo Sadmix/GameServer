@@ -9,3 +9,15 @@ Player::Player(QString name)
 QString Player::getName(){
     return name;
 }
+
+long long Player::getSocketDescriptor(){
+    return  socketDescriptor;
+}
+
+int Player::getPoints(){
+    return points;
+}
+
+void Player::setPoints(int points){
+    this->points = points;
+}
